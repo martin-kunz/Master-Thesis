@@ -1,0 +1,10 @@
+[
+  {
+    "role": "system",
+    "content": "You are an assistant for augmenting the test suite in our Java software. You write a JUnit test case that reproduce the failure behavior of the bug report."
+  },
+  {
+    "role": "user",
+    "content": "Generate a self-contained reproducing test case from the following bug report.\n\n# Allow attributes valid in html when converting from JSoup to W3C Document\n## Description\nConsider the following html document:\n\n\n\nunicode attr names\n\n\n\">\n```\n>\n<html>\n<head>head>\n<body style=\"color: red\" \" name\">\n <p h\u00e0nh=\"1\" h\u00ecnh=\"2\">unicode attr namesp>\nbody>html>\n```\n\nUsing v1.14.2 and running the following code:\n\n\nunicode attr names\n\n\";\n org.jsoup.nodes.Document jsoupDoc;\n jsoupDoc = Jsoup.parse(html);\n Document w3Doc = W3CDom.convert(jsoupDoc);\n System.out.println(W3CDom.asString(w3Doc, W3CDom.OutputHtml()));\n }\">\n```\n    public static void main(String[] args) {\n        String html = \"unicode attr names\n\n\";\n        org.jsoup.nodes.Document jsoupDoc;\n        jsoupDoc = Jsoup.parse(html);\n        Document w3Doc = W3CDom.convert(jsoupDoc);\n        System.out.println(W3CDom.asString(w3Doc, W3CDom.OutputHtml()));\n    }\n```\n\nResults in:\n\n\n\n\n\n\nunicode attr names\n\n\n\n\">\n```\n>\n<html>\n<head><META http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\">head>\n<body name=\"\" style=\"color: red\">\n <p hnh=\"2\">unicode attr namesp>\nbody>\nhtml>\n```\n\nThis is caused by [W3CDOM.java#L346](https://github.com/jhy/jsoup/blob/master/src/main/java/org/jsoup/helper/W3CDom.java#L346) hard-codes the syntax to `xml`. It can be easily fixed by checking the doctype of the output document and use that as the syntax.\n\n\n\n\n---IMPORTANT: Your entire response must be *only* the Java code for the test method. Start your response directly with the method signature `public void test`."
+  }
+]

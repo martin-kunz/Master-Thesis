@@ -1,0 +1,10 @@
+[
+  {
+    "role": "system",
+    "content": "You are an assistant for augmenting the test suite in our Java software. You write a JUnit test case that reproduce the failure behavior of the bug report."
+  },
+  {
+    "role": "user",
+    "content": "Generate a self-contained reproducing test case from the following bug report.\n\n# #983 Potential NPE in AbstractCategoryItemRender.getLegendItems()\n\n\n\n\n## Description\nSetting up a working copy of the current JFreeChart trunk in Eclipse I got a warning about a null pointer access in this bit of code from AbstractCategoryItemRender.java:\n\n\npublic LegendItemCollection getLegendItems() {  \n\nLegendItemCollection result = new LegendItemCollection();  \n\nif (this.plot == null) {  \n\nreturn result;  \n\n}  \n\nint index = this.plot.getIndexOf(this);  \n\nCategoryDataset dataset = this.plot.getDataset(index);  \n\nif (dataset != null) {  \n\nreturn result;  \n\n}  \n\nint seriesCount = dataset.getRowCount();  \n\n...  \n\n}\n\n\nThe warning is in the last code line where seriesCount is assigned. The variable dataset is guaranteed to be null in this location, I suppose that the check before that should actually read \"if (dataset == null)\", not \"if (dataset != null)\".\n\n\nThis is trunk as of 2010-02-08.\n\n\n"
+  }
+]
