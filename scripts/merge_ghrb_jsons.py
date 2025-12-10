@@ -4,6 +4,13 @@ import argparse
 import sys
 
 
+"""
+Script to merge all GHRB files
+
+Example:
+python3.9 merge_ghrb_jsons.py --prefix exp1 --input_dir ./results --output_dir ./results
+"""
+
 PROJECTS = [
     "assertj_assertj-core",
     "checkstyle_checkstyle",
