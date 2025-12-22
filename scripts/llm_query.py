@@ -12,10 +12,9 @@ from llm_api import model_is_chat, query_llm
 
 TEMPLATE_DIR = llm_exp_config['template_dir']
 
-# NEU: Hier werden die Prompts gespeichert
 PROMPT_LOG_DIR = 'root/libro/data/prompt_examples'
 
-# --- KONFIGURATION DER EXPERIMENTE ---
+# Configuration
 EXPERIMENT_CONFIGS = {
     "libro":          {"template_base": "2example_chat", "include_docs": False},
     "libro-repro":    {"template_base": "2example_chat", "include_docs": False},
@@ -30,20 +29,15 @@ EXPERIMENT_CONFIGS = {
 
 def make_messages_from_file(rep_title, rep_content, project_name, 
                             template_file, dataset, include_docs=False):
-    """
-    Erstellt die Prompt-Messages.
-    """
     rep_title = BeautifulSoup(rep_title.strip(), 'html.parser').get_text()
     rep_content = md(rep_content.strip())
 
-    # 1. Bug Report Text
     bug_report_content = f"""
 # {rep_title}
 ## Description
 {rep_content}
 """
 
-    # 2. Dokumentation
     if not include_docs:
         enhanced_content = bug_report_content
     else:
@@ -52,7 +46,6 @@ def make_messages_from_file(rep_title, rep_content, project_name,
         else:
             doc_filename = 'javadocs_Defects4J.json'
 
-        # Versuche relativen Pfad oder Fallback
         docs_file_path = os.path.join(TEMPLATE_DIR, '../javadoc', doc_filename)
         if not os.path.exists(docs_file_path):
              # Fallback: Relativ zum Skript oder hardcoded
@@ -61,35 +54,30 @@ def make_messages_from_file(rep_title, rep_content, project_name,
              
              if not os.path.exists(docs_file_path):
                  # Dein absoluter Pfad als letzter Fallback
-                 docs_file_path = f'/vol/fob-vol7/mi21/kunzmart/Master-Thesis/libro/data/javadoc/{doc_filename}'
+                 docs_file_path = f'../javadoc/{doc_filename}'
 
-        project_docs = "Documentation not found."
+        project_docs = "Documentation not found"
         
         if os.path.exists(docs_file_path):
             try:
                 with open(docs_file_path, 'r', encoding='utf-8') as f:
                     all_docs = json.load(f)
                 
-                # --- INTELLIGENTE SUCHE ---
-                # 1. Exakter Match
                 found_doc = all_docs.get(project_name)
                 
-                # 2. GHRB Fix: Wenn "user_repo" nicht gefunden, versuche "repo"
                 if not found_doc and "_" in project_name:
-                    simple_name = project_name.split("_", 1)[1] # Alles nach dem ersten "_"
+                    simple_name = project_name.split("_", 1)[1]
                     found_doc = all_docs.get(simple_name)
                 
                 if found_doc:
                     project_docs = found_doc
                 else:
-                    # Optional: Zeige erste 3 Keys zum Debuggen
-                    # keys_preview = list(all_docs.keys())[:3]
                     pass 
 
             except Exception as e:
-                print(f"Warning: Could not load docs from {docs_file_path}: {e}")
+                print(f"[WARNING]: Could not load docs from {docs_file_path}: {e}")
         else:
-            print(f"Warning: Documentation file not found at {docs_file_path}")
+            print(f"[WARNING]: Documentation file not found at {docs_file_path}")
         
         enhanced_content = f"""
 {bug_report_content}
@@ -100,12 +88,10 @@ To help you, here is some relevant API documentation for the project '{project_n
 {project_docs}
 """
 
-    # --- Template verarbeiten ---
     with open(template_file, 'r', encoding='utf-8') as f:
         messages = json.load(f)
 
         for msg in messages:
-            # Examples laden
             example_text_path = re.findall(r'{%(.+?)%}', msg['content'])
             if len(example_text_path) > 0:
                 for ef in example_text_path:
@@ -117,7 +103,6 @@ To help you, here is some relevant API documentation for the project '{project_n
                     else:
                         print(f"Warning: Example file {ef} not found at {full_example_path}")
 
-            # Content einfügen
             if '{{bug_report_content}}' in msg['content']:
                 msg['content'] = msg['content'].replace('{{bug_report_content}}', enhanced_content)
 
@@ -151,7 +136,6 @@ def query_llm_for_gentest(proj, bug_id, model,
                           use_plain_text=False, use_html=False, 
                           save_prompt=False, prompt_save_path=None):
     
-    # Pfad zum Bug Report Verzeichnis basierend auf dataset bestimmen
     if dataset == 'ghrb':
         current_br_dir = llm_exp_config['bug_report_dir']['ghrb']
     else:
@@ -160,7 +144,7 @@ def query_llm_for_gentest(proj, bug_id, model,
     bug_file_path = os.path.join(current_br_dir, f"{proj}-{bug_id}.json")
     
     if not os.path.exists(bug_file_path):
-        print(f"ERROR: Bug report file not found at {bug_file_path}")
+        print(f"[ERROR]: Bug report file not found at {bug_file_path}")
         return ""
 
     with open(bug_file_path, 'r', encoding='utf-8') as f:
@@ -168,7 +152,6 @@ def query_llm_for_gentest(proj, bug_id, model,
         
     chat_mode = model_is_chat(model)
 
-    # Template Pfad
     template_path = os.path.join(TEMPLATE_DIR, f'{template_name}.json')
     if not chat_mode:
         template_path = os.path.join(TEMPLATE_DIR, f'{template_name}.txt')
@@ -194,16 +177,13 @@ def query_llm_for_gentest(proj, bug_id, model,
             template_file=template_path
         )
 
-    # --- SPEICHER-LOGIK ---
     if save_prompt:
         ext = 'json' if chat_mode else 'txt'
         
-        # Wenn kein Pfad via CLI übergeben wurde, nutze den Default-Ordner
         if prompt_save_path is None:
             filename = f'{proj}-{bug_id}-{template_name}.{ext}'
             prompt_save_path = os.path.join(PROMPT_LOG_DIR, filename)
         
-        # Ordner erstellen (rekursiv)
         os.makedirs(os.path.dirname(prompt_save_path) if os.path.dirname(prompt_save_path) else '.', exist_ok=True)
         
         print(f"Saving prompt to: {prompt_save_path}")
@@ -213,12 +193,11 @@ def query_llm_for_gentest(proj, bug_id, model,
             else:
                 f.write(prompt)
 
-    print("================ ANFRAGE-PROMPT AN LLM ================")
     if chat_mode:
         print(json.dumps(prompt, indent=2))
     else:
         print(prompt)
-    print("======================================================")
+    print("="*60)
 
     query_result = query_llm(prompt, model, stop)
     
@@ -263,7 +242,7 @@ if __name__ == '__main__':
 
     # Config laden
     if args.experiment not in EXPERIMENT_CONFIGS:
-        print(f"Error: Experiment '{args.experiment}' not found in config. Using legacy.")
+        print(f"Error: Experiment '{args.experiment}' not found in config")
         selected_config = EXPERIMENT_CONFIGS['legacy']
     else:
         selected_config = EXPERIMENT_CONFIGS[args.experiment]

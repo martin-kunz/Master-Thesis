@@ -25,9 +25,6 @@ def main():
 
     args = parser.parse_args()
 
-    # Note: We do not create args.output_dir here because this script only generates text commands.
-    # The directory creation usually happens when the generated commands are actually executed.
-
     commands = []
 
     if not os.path.exists(args.input_dir):
@@ -38,7 +35,7 @@ def main():
     print(f"Dataset: {args.dataset.upper()}")
     print(f"Repetitions: {args.n}")
 
-    # List all json files
+    # List all .json files
     files = [f for f in os.listdir(args.input_dir) if f.endswith(".json")]
     
     if not files:

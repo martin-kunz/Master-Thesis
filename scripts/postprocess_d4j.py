@@ -199,7 +199,6 @@ def twover_run_experiment(proj, bug_id, example_tests, injection=True):
     # Matching results together
     final_results = []
     for buggy_info, fixed_info in zip(buggy_results, fixed_results):
-        # Fall 1: Fehler schon beim Buggy-Test
         if isinstance(buggy_info, str): 
             final_results.append({
                 'buggy': buggy_info,
@@ -208,7 +207,6 @@ def twover_run_experiment(proj, bug_id, example_tests, injection=True):
             })
             continue
 
-        # Fall 2: Fehler beim Fixed-Test (Der Fix für Ihren Absturz!)
         if fixed_info is None or isinstance(fixed_info, str):
             final_results.append({
                 'buggy': buggy_info,
@@ -217,7 +215,6 @@ def twover_run_experiment(proj, bug_id, example_tests, injection=True):
             })
             continue
 
-        # Fall 3: Alles okay -> Auswertung
         fails_in_buggy_version = any(map(lambda x: 'AutoGen' in x, buggy_info['failed_tests']))
         fails_in_fixed_version = any(map(lambda x: 'AutoGen' in x, fixed_info['failed_tests']))
 
@@ -236,13 +233,13 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--project', default='Time')
     parser.add_argument('-b', '--bug_id', type=int, default=18)
     parser.add_argument('-n', '--test_no', type=int, default=None)
-    parser.add_argument('--gen_test_dir', default='/root/data/Defects4J/gen_tests_d4j_paper/')
+    parser.add_argument('--gen_test_dir', default='/root/data/Defects4J/gen_tests/')
     parser.add_argument('--all', action='store_true')
     parser.add_argument('--exp_name', default='gpt3.5')
     args = parser.parse_args()
 
     GEN_TEST_DIR = args.gen_test_dir
-    print(f"Pfad der generierten Tests: {GEN_TEST_DIR}")
+    print(f"Path: {GEN_TEST_DIR}")
     if args.all:
         bug2tests = defaultdict(list)
         
@@ -309,5 +306,4 @@ if __name__ == '__main__':
                 test_content = test_content.removesuffix('```')
 
             example_test = test_content
-        # example experiment execution
         print(twover_run_experiment(args.project, args.bug_id, [example_test]))
